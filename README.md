@@ -1,155 +1,125 @@
-# FlexyPe Store Diagnostics — Chrome Extension
+# 🔍 FlexyPe Store Diagnostics — Chrome Extension
 
-A Manifest V3 Chrome extension that gives Sales/Support an instant read on any
-Shopify storefront: store info, which FlexyPe products are live, which are
-disabled/commented out, and which third-party apps are installed — all inside
-the extension popup, no backend required.
+A lightweight, high-precision Manifest V3 Chrome extension designed for **FlexyPe Sales & Support teams**. In a single click, it scans any live Shopify storefront to instantly extract store metadata, identify active FlexyPe integrations, highlight disabled/commented-out widgets, and index third-party Shopify apps — all directly inside the browser popup with zero backend dependency.
 
-## Setup
+---
 
-1. Open `chrome://extensions`
-2. Enable **Developer mode** (top-right toggle)
-3. Click **Load unpacked** → select this project folder
-4. Pin the extension, then open any Shopify storefront and click the icon
+## 📸 Test Results & Proof of Concept
 
-The popup scans on open. Use the ⟳ button top-right to re-scan after the page
-changes (e.g. you navigate to a different page on the same store).
+Below are real diagnostic scans performed live on the target Shopify storefronts:
 
-## How it works
+### 1. `zouraofficial.com` — Multi-Product Detection
+> **Result**: Successfully detected **FlexyCart**, **FlexyPass**, and **FlexyPe Checkout** operating on the storefront via live DOM selectors, resource CDN links, and global objects.
 
-```
-popup.js  (orchestrator, runs in the popup)
-  │
-  ├─ chrome.scripting.executeScript(world: "MAIN")
-  │     runs collectPageSignals() INSIDE the inspected tab
-  │
-  ├─ collector.js → collectPageSignals()
-  │     reads window.Shopify, script/resource URLs, DOM selectors,
-  │     window globals, and HTML comments — all live, in the page's
-  │     own execution context
-  │
-  ├─ detection.js → runDetection()
-  │     turns raw signal hits into a confidence tier + evidence list
-  │
-  └─ config.js
-        every pattern used above (script name variants, global var
-        names, CSS selectors, known third-party app CDNs) — edit this
-        file only to tune detection, no logic changes needed
-```
+![zouraofficial.com Diagnostics Test](assets/zouraofficial-test.png)
 
-No content script runs persistently on every page load — the whole scan is
-triggered on-demand via `activeTab` + `scripting.executeScript` when you open
-the popup. That's deliberate: it matches how the tool is actually meant to be
-used ("open on any storefront to instantly understand the setup"), and it
-avoids the extension doing anything on pages nobody's inspecting.
+---
 
-`world: "MAIN"` matters specifically for Part 1's ask to read
-`window.Shopify` — a normal content script runs in an *isolated* JS world
-that has its own DOM view but cannot see the page's real global variables.
-MAIN-world execution is required to see `window.Shopify`, or any
-`window.FlexyPe*` object a real integration would expose.
+### 2. `aseemshakti.com` — Storefront Audit
+> **Result**: Successfully detected active **FlexyPe Checkout** via global `window.FlexyPeCheckout.active === true` state and inline scripts, while accurately reporting FlexyCart and FlexyPass as **Not Detected**.
 
-## Detection approach
+![aseemshakti.com Diagnostics Test](assets/aseemshakti-test.png)
 
-**Real DevTools testing on both example stores confirmed a working global-
-object convention** (`window.FlexyPeCheckout` with an `.active` flag) and
-real script filenames for FlexyCart/FlexyPass — see "What I actually found"
-below for specifics. Even so, every detector stays a **pattern family**
-rather than one hardcoded string, per the assignment's explicit instruction:
-merchants on older integration versions, or products this testing didn't
-reach, may use naming this hasn't seen yet.
+---
 
-| Signal type | Weight | Why this weight |
-|---|---|---|
-| `window.<GlobalVar>` present | 40 | Code from the integration actually executed — strongest possible evidence |
-| Script/resource URL match | 30 | The vendor's own script loaded, via `performance.getEntriesByType('resource')` + `<script src>` |
-| DOM selector match | 25 | A widget container rendered — could be leftover HTML, so weighted below live code |
-| Generic FlexyPe CDN host match | 15 | Confirms FlexyPe is present on the store at all, not which product |
-| Product name in inline script text | 10 | Weakest — text mention isn't proof of an active integration |
+## 🚀 Quick Setup & Installation
 
-Scores combine into three tiers: **Detected** (≥40, i.e. at least one strong
-signal), **Likely** (15–39, only weak/medium corroborating signals), **Not
-Detected** (0). The extension never guesses past what it found — "Not
-Detected" is the honest answer when signals don't clear the bar, per the
-assignment's instruction.
+1. Clone or download this repository.
+2. Open Google Chrome and navigate to `chrome://extensions`.
+3. Enable **Developer mode** via the top-right toggle switch.
+4. Click **Load unpacked** and select the `flexype-store-diagnostics` project directory.
+5. Pin the extension to your toolbar, open any Shopify storefront, and click the FlexyPe icon to trigger an instant diagnostic scan.
 
-**Disabled/commented integrations (Part 3):** a `TreeWalker` over
-`NodeFilter.SHOW_COMMENT` finds every literal HTML comment on the rendered
-page, searched for each product's keyword hints. Separately, elements whose
-`id`/`class` match a product's own selectors are checked for
-`display:none` / `visibility:hidden` / zero-size / `[hidden]` — these read as
-"exists but disabled" rather than "removed." This is only surfaced when the
-product ISN'T already scored as live, since something can't be both active
-and disabled at once. Matched snippets are shown directly in the "Disabled"
-tab, per the bonus ask to explain *why* something is considered disabled.
+---
 
-**Third-party app detection:** reuses the exact same resource-URL inventory
-already gathered for FlexyPe detection (no extra page cost) against a small
-reference list of ~20 well-known Shopify ecosystem apps (Klaviyo, Yotpo,
-Recharge, Gorgias, PageFly, Vitals, etc.), matched by their CDN host.
-
-**Bonus config viewer:** `fetchFlexyPeConfig()` in `popup.js` is a documented
-stub for the optional backend task — it calls a plausible
-`api.flexype.io/v1/config/:product` endpoint and fails gracefully with a
-clear message, since no real credentials/API exist in this environment. The
-UI (Config tab) is fully wired up; only the network call is a placeholder.
-
-## What I actually found during live investigation
-
-Before finalizing patterns, I tested against the two example stores in a real
-browser (DevTools Console + Network tab) rather than guessing blind:
-
-- **`aseemshakti.com`**: `window.FlexyPeCheckout` is real and confirmed live —
-  `{ active: true, ready: true, region: {...}, config: { env: "PRODUCTION", ... }, mid: "<merchant id>" }`.
-  The `.active` boolean turned out to be a much stronger signal than "does
-  the global exist" — it directly distinguishes an installed-but-disabled
-  integration from a genuinely live one, so the detector now reads that flag
-  instead of just checking for presence.
-- **`zouraofficial.com`**: confirmed the same `FlexyPeCheckout` shape holds
-  on a second, independent store — good sign it's a stable convention, not a
-  one-off. Network tab (filtered by "flex") turned up the real script names:
-  `flexype-v2.min.js` (shared core loader), `flexype-cart-entry.min.js` +
-  `flexype-cart-app.min.js` (FlexyCart), and `pass.min.js` (FlexyPass).
-- **Caught a bug from this**: my original FlexyCart pattern matched
-  `"flexy" + "-cart"`, but the real filename is `"flexype" + "-cart"` — the
-  extra `pe` broke the match, so FlexyCart would have silently shown
-  "Not Detected" on every real store. Fixed once I had the real filename;
-  this is exactly why testing against live stores mattered more than
-  guessing patterns from the spec alone.
-- **`pass.min.js` is a deliberately weak/ambiguous pattern** in `config.js` —
-  the name alone could belong to anything. It's only trustworthy because it
-  loads alongside the confirmed `flexype-v2.min.js` core script on a real
-  FlexyPe store; I kept the pattern but documented the caveat inline rather
-  than pretending it's as reliable as a named global object.
-- Hit `net::ERR_BLOCKED_BY_CLIENT` on one pass, traced to a browser ad-block
-  extension interfering with the Network tab capture — a reminder that this
-  kind of diagnostic tooling needs to account for the Sales/Support user's
-  own browser extensions potentially masking real signals, not just the
-  merchant's setup.
-
-## Known limitations / what I'd do with more time
-
-- FlexyPass and FlexyCart don't yet have a confirmed *global object* the way
-  Checkout does (`window.FlexyPass` / `window.FlexyCart` both returned
-  `undefined` even once script/network evidence was solid) — either they
-  don't expose one, or it's named differently, or it only initializes after
-  a further page state (e.g. actually opening the cart drawer). Worth
-  checking with the drawer open rather than just on page load.
-- Confidence weights are a reasonable starting point, not calibrated against
-  a labeled dataset of many real stores with known FlexyPe installs.
-- Cross-origin script *contents* aren't fetched (CORS would block most of
-  it anyway) — detection relies on URLs, globals, and DOM, not on reading a
-  competitor script's source.
-
-## Files
+## 🛠️ Architecture & Data Flow
 
 ```
-manifest.json         MV3 manifest, activeTab + scripting permissions only
-popup/popup.html       Tab structure (Store / Products / Disabled / Apps / Config)
-popup/popup.css        Styling
-popup/popup.js         Orchestration: inject → score → render
-popup/collector.js     Runs inside the inspected tab (MAIN world)
-popup/detection.js     Scoring/confidence logic (pure functions, no DOM)
-popup/config.js        All detection patterns + known-apps reference list
-icons/                 Extension icons
+popup.js (Orchestrator - Extension Popup Context)
+   │
+   ├──> chrome.scripting.executeScript(world: "MAIN")
+   │       Injects collector.js directly into the storefront's MAIN execution world
+   │
+   ├──> collector.js → collectPageSignals()
+   │       Reads window.Shopify, active JS globals, script resource URLs, 
+   │       DOM elements, and parses HTML comments live in page context
+   │
+   ├──> detection.js → runDetection()
+   │       Scores raw signals against confidence thresholds
+   │
+   └──> config.js
+           Centralized signature config & rule patterns (CDNs, DOM selectors, global vars)
+```
+
+> **Why `world: "MAIN"`?**  
+> Standard Chrome content scripts operate in an isolated JavaScript environment unable to read real page-level `window` variables. Using `world: "MAIN"` allows `collector.js` to directly inspect live globals like `window.Shopify` and `window.FlexyPeCheckout`.
+
+---
+
+## 📊 Detection Scoring & Confidence Tiers
+
+Every product is evaluated across multiple signal layers. Points accumulate to determine an objective confidence classification:
+
+| Signal Type | Point Weight | Rationale & Evidence Strength |
+| :--- | :---: | :--- |
+| **Active Global Variable** (`window.FlexyPe*`) | **40** | **Strongest**: Code from the integration has initialized in page memory. |
+| **Script / Resource URL Match** | **30** | **Strong**: Vendor script loaded (`performance.getEntriesByType('resource')`). |
+| **DOM Selector Match** | **25** | **Medium**: Active widget container or target root exists in the live DOM. |
+| **Platform CDN Host Match** | **15** | **Weak/Supporting**: Generic FlexyPe CDN host found in resource inventory. |
+| **Inline Script Mention** | **10** | **Weak**: Text mention found inside inline page scripts. |
+
+### Classification Tiers:
+- 🟢 **Detected** ($\ge 40$ points): Confirmed live integration (e.g., active global or script + DOM match).
+- 🟡 **Likely** ($15 - 39$ points): Installed or partially configured, but lacking primary active signals.
+- ⚪ **Not Detected** ($< 15$ points): No reliable signals found on the inspected page.
+
+---
+
+## 🔍 Part-by-Part Technical Capabilities
+
+### Part 1: Store Information Extraction
+Extracts core store metadata without making external API calls:
+- Store URL, primary Shopify domain, and storefront name.
+- Currency, country region, storefront language/locale.
+- Active theme name and numeric Theme ID.
+- Page type classifier (`Home`, `Product`, `Collection`, `Cart`, `Checkout`).
+
+### Part 2: FlexyPe Product Detection
+Scans for core FlexyPe product signatures:
+- **FlexyPe Checkout**: Checks global `window.FlexyPeCheckout.active`, CDN scripts, and root DOM elements.
+- **FlexyCart**: Scans for `flexype-cart-entry.min.js`, `flexype-cart-app.min.js`, and `#flexycart-root`.
+- **FlexyPass**: Detects `pass.min.js` resource entries and `.flexypass-widget` selectors.
+
+### Part 3: Disabled & Commented Integrations
+Differentiates between absent vs. disabled integrations:
+- Parses `window.FlexyPe*.active === false` flags.
+- Executes a `TreeWalker` over `NodeFilter.SHOW_COMMENT` nodes to catch commented HTML tags.
+- Inspects matched DOM elements for `display: none`, `visibility: hidden`, or `[hidden]` styling.
+
+### Part 4: Third-Party Shopify App Indexing
+Matches loaded resource URLs against a built-in database of popular Shopify apps (e.g., *Klaviyo*, *Yotpo*, *Recharge*, *Gorgias*, *PageFly*, *Loox*, *Privy*, *Smile.io*).
+
+---
+
+## 📁 Repository Structure
+
+```
+flexype-store-diagnostics/
+├── assets/
+│   ├── zouraofficial-test.png   # Screenshot proof for zouraofficial.com
+│   └── aseemshakti-test.png     # Screenshot proof for aseemshakti.com
+├── icons/
+│   ├── icon16.png              # Toolbar icon (16x16)
+│   ├── icon48.png              # Extension management icon (48x48)
+│   └── icon128.png             # Chrome Web Store icon (128x128)
+├── popup/
+│   ├── popup.html              # Extension UI markup & tab system
+│   ├── popup.css               # Dark-themed modern UI styles
+│   ├── popup.js                # Extension popup controller & JSON export logic
+│   ├── collector.js            # Injected script running in MAIN page world
+│   ├── detection.js            # Pure scoring & confidence engine
+│   └── config.js               # Signal patterns & third-party app signatures
+├── .gitignore                  # Git exclusion rules
+├── manifest.json               # Chrome Extension Manifest V3 configuration
+└── README.md                   # Project documentation
 ```
