@@ -1,0 +1,22 @@
+# Operating System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE settings
+.vscode/
+.idea/
+*.swp
+
+# Extension build & signing artifacts
+*.pem
+*.crx
+*.zip
+dist/
+build/
+
+# Environment files & Node dependencies
+node_modules/
+npm-debug.log*
+.env
+.env.local
