@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "FlexyPe Store Diagnostics",
+  "short_name": "FlexyPe Diagnostics",
+  "version": "1.0.0",
+  "description": "One-click Shopify storefront diagnostics for FlexyPe Sales & Support: store info, FlexyPe product detection, disabled integrations, and third-party app scan.",
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "FlexyPe Store Diagnostics"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["http://*/*", "https://*/*"]
+}
