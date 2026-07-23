@@ -15,31 +15,31 @@
  */
 
 function collectPageSignals(serializedConfig) {
-  const toRe = (p) => new RegExp(p.source, p.flags);
+  const toRe = (p) => new RegExp(p.source , p.flags) ;
 
-  const signals = serializedConfig.signals;
+  const signals = serializedConfig.signals ;
   const platformPatterns = serializedConfig.platformPatterns.map(toRe);
-  const appHostPatterns = serializedConfig.appHostPatterns.map((a) => ({ ...a, pattern: toRe(a.pattern) }));
+  const appHostPatterns = serializedConfig.appHostPatterns.map(a => ({ ...a, pattern: toRe(a.pattern) }))
 
   // ---- Part 1: Store info -------------------------------------------------
-  const shopify = window.Shopify || null;
+  var shopify = window.Shopify || null;
   const storeInfo = {
     storeUrl: location.hostname,
     shopifyDomain: (shopify && (shopify.shop || shopify.domain)) || null,
-    shopName: (document.querySelector('meta[property="og:site_name"]') || {}).content || null,
-    currency: (shopify && shopify.currency && (shopify.currency.active || shopify.currency)) || null,
+    shopName: (document.querySelector('meta[property="og:site_name"]') || {}).content || null ,
+    currency: (shopify && shopify.currency && (shopify.currency.active || shopify.currency)) || null ,
     country: (shopify && shopify.country) || null,
     locale: (shopify && shopify.locale) || document.documentElement.lang || null,
-    themeName: (shopify && shopify.theme && shopify.theme.name) || null,
+    themeName: (shopify && shopify.theme && shopify.theme.name) || null ,
     themeId: (shopify && shopify.theme && shopify.theme.id) || null,
     currentPage: (function () {
-      const p = location.pathname;
+      let p = location.pathname;
       if (p === "/" || p === "") return "Home";
-      if (p.startsWith("/products/")) return "Product";
+      if(p.startsWith("/products/")) return "Product";
       if (p.startsWith("/collections/")) return "Collection";
-      if (p.startsWith("/cart")) return "Cart";
+      if(p.startsWith("/cart")) return "Cart";
       if (p.startsWith("/pages/")) return "Page";
-      if (p.startsWith("/blogs/")) return "Blog";
+      if(p.startsWith("/blogs/")) return "Blog";
       if (p.startsWith("/checkout")) return "Checkout";
       return "Other";
     })(),
