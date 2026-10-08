@@ -1,183 +1,274 @@
-# Multi-Tool AI Agent (Groq & Ollama)
+<div align="center">
 
-A high-performance AI agent project powered by **Groq API** (ultra-fast cloud inference) and **Ollama** (optional local fallback), built with **LangChain** and **LangGraph**. The agent can use tools, remembers conversation context, and includes CLI, Streamlit, and FastAPI + React interfaces.
+# ⚡ Multi-Tool AI Agent
 
-## Features
+**Autonomous ReAct Agent powered by Groq LPU Inference, LangChain & LangGraph**
 
-- **Groq API support** for ultra-fast LPU inference (e.g., `llama-3.3-70b-versatile`, `llama-3.1-8b-instant`)
-- **Ollama support** for 100% offline local models (e.g., `phi3`, `llama3.2`)
-- **ReAct-style agent workflow** using LangChain and LangGraph
-- **Calculator tool** for math expressions
-- **Knowledge base tool** for technical topics
-- **Date and time tool**
-- **Conversation memory support**
-- **Streamlit chat UI** with provider & model switcher
-- **FastAPI backend** for API-based chat
-- **React + Vite frontend**
-- **Unit tests for tools**
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![LangChain](https://img.shields.io/badge/LangChain-v0.3+-green.svg)](https://python.langchain.com/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-v0.2+-orange.svg)](https://langchain-ai.github.io/langgraph/)
+[![Groq LPU](https://img.shields.io/badge/Groq-Ultra--Fast_Inference-red.svg)](https://groq.com/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.38+-FF4B4B.svg)](https://streamlit.io/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg)](https://fastapi.tiangolo.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Project Structure
+<br/>
 
-```text
-Basic_Agent/
-+-- agent.py                  # Basic agent CLI
-+-- agent_with_memory.py      # Agent with conversation memory
-+-- agent_langgraph.py        # LangGraph-based agent
-+-- app.py                    # Streamlit web app
-+-- config.py                 # Environment-based configuration
-+-- setup.py                  # Environment setup checker
-+-- requirements.txt          # Python dependencies
-+-- backend/
-|   +-- api.py                # FastAPI backend
-+-- frontend/
-|   +-- package.json          # React frontend dependencies
-|   +-- src/                  # Frontend source files
-+-- tools/
-|   +-- calculator.py
-|   +-- datetime_tool.py
-|   +-- knowledge_base.py
-+-- tests/
-    +-- test_tools.py
+<!-- Dashboard Screenshot -->
+<p align="center">
+  <img src="assets/dashboard.png" alt="Multi-Tool AI Agent Dashboard" width="900" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);" />
+</p>
+
+*Modern ChatGPT-style dark editorial dashboard with sidebar session management, real-time tool calling, and sub-second Groq responses.*
+
+</div>
+
+---
+
+## 📌 Overview
+
+**Multi-Tool AI Agent** is an end-to-end intelligent assistant built with **LangChain**, **LangGraph**, and **Groq Cloud API** (with offline **Ollama** fallback). The system implements an autonomous **ReAct (Reasoning + Acting)** loop, allowing the LLM to inspect user queries, dynamically select and execute Python tools, evaluate execution outputs, and synthesize accurate responses.
+
+The application includes:
+- **Editorial Streamlit Dashboard**: A minimalist, dark-themed UI featuring conversation threads, title generation, chat deletion, and suggestions.
+- **REST API Backend**: FastAPI service supporting asynchronous streaming, session history, and tool metadata endpoints.
+- **Modern React Frontend**: Clean Vite + React client for headless integrations.
+- **Command Line Interfaces**: Terminal runners with CLI memory inspection and LangGraph workflow visualization.
+
+---
+
+## 🏛️ System Architecture
+
+The following diagram illustrates the flow of execution from the client layer through the LangGraph ReAct agent orchestration to the tool execution and LLM inference engine:
+
+```mermaid
+flowchart TD
+    subgraph Client Layer
+        UI[Streamlit Dark Dashboard]
+        REACT[React + Vite Frontend]
+        CLI[Terminal CLI Runners]
+    end
+
+    subgraph API & Session Layer
+        FASTAPI[FastAPI Backend /chat]
+        SESSIONS[(In-Memory Session Store)]
+    end
+
+    subgraph Agent Core [LangGraph ReAct Engine]
+        STATE[Conversation State & History]
+        DECIDE{Agent Reasoning Step}
+        ACTION[Tool Selection & Dispatch]
+        OBSERVE[Observation Synthesizer]
+    end
+
+    subgraph LLM Inference Layer
+        GROQ[Groq Cloud API\nopenai/gpt-oss-120b\nllama-3.3-70b-versatile]
+        OLLAMA[Local Ollama Fallback\nllama3.2 / phi3]
+    end
+
+    subgraph Tool Execution Engine
+        CALC[🧮 Math Calculator\nAST / Sympy Evaluator]
+        KB[📖 Tech Knowledge Base\nIndexed Vector & Docs]
+        TIME[🕒 Date & Time Tool\nSystem Clock & Timezones]
+    end
+
+    UI -->|Session State| STATE
+    REACT -->|HTTP / JSON| FASTAPI
+    CLI --> STATE
+    FASTAPI <--> SESSIONS
+    FASTAPI --> STATE
+
+    STATE --> DECIDE
+    DECIDE <-->|Prompt / Tool Schema| GROQ
+    DECIDE -.->|Offline Mode| OLLAMA
+
+    DECIDE -->|Calls Tool| ACTION
+    ACTION --> CALC
+    ACTION --> KB
+    ACTION --> TIME
+
+    CALC -->|Result| OBSERVE
+    KB -->|Doc Snippet| OBSERVE
+    TIME -->|Timestamp| OBSERVE
+
+    OBSERVE -->|Update State| STATE
+    DECIDE -->|Final Response| UI
+    DECIDE -->|JSON Payload| FASTAPI
 ```
 
-## Requirements
+### Workflow Execution Details:
+1. **User Request**: The user submits a query through the Streamlit interface or API.
+2. **Context Compilation**: Previous conversation history is retrieved from session state and formatted as LangChain `HumanMessage` and `AIMessage` objects.
+3. **Reasoning & Tool Call**: The agent invokes Groq's high-speed inference engine equipped with tool schemas.
+4. **Tool Execution**: If a calculation, technical documentation lookup, or current time is needed, the respective Python tool executes safely in an isolated environment.
+5. **Observation & Synthesis**: The tool's output is injected into the agent scratchpad, producing a verified final response.
 
-- Python 3.9 or newer
-- **Groq API Key** (Free from https://console.groq.com/keys) OR Ollama installed locally
-- Node.js and npm (optional, for React frontend)
+---
 
-## Quickstart
+## 🛠️ Built-in Tools
 
-1. Install Python dependencies:
+| Tool | Capability | Example Queries |
+| :--- | :--- | :--- |
+| **🧮 Calculator** | Evaluates mathematical expressions, powers, roots, and equations | `"sqrt(144) + 25*3"`, `"2**16 - 1024"` |
+| **📖 Knowledge Base** | Retrieves documentation for frameworks, architectures, and libraries | `"What is LangGraph?"`, `"Explain ReAct prompting"` |
+| **🕒 Date & Time** | Fetches the current system time, calendar date, and timestamps | `"What day is it today?"`, `"Current UTC time"` |
 
+---
+
+## 📁 Repository Structure
+
+```text
+Multi-Tool-LLM-Agent/
+├── assets/
+│   └── dashboard.png             # UI preview screenshot
+├── backend/
+│   └── api.py                    # FastAPI server with session & tool endpoints
+├── frontend/
+│   ├── src/                      # React frontend components and views
+│   └── package.json              # Frontend dependencies
+├── tools/
+│   ├── calculator.py             # Math expression evaluator
+│   ├── datetime_tool.py          # Real-time clock and calendar utility
+│   └── knowledge_base.py         # Technical documentation lookup
+├── tests/
+│   └── test_tools.py             # Pytest suite for tool verification
+├── .streamlit/
+│   └── config.toml               # Streamlit theme and server configuration
+├── .env.example                  # Environment template
+├── agent.py                      # Basic CLI agent
+├── agent_langgraph.py            # LangGraph ReAct workflow runner
+├── agent_with_memory.py          # Memory-enabled CLI runner
+├── app.py                        # Streamlit dark editorial dashboard
+├── config.py                     # Centralized environment & secrets loader
+├── requirements.txt              # Python production dependencies
+└── setup.py                      # Environment & dependency verification script
+```
+
+---
+
+## 🚀 Quickstart Guide
+
+### 1. Prerequisites
+- Python 3.10 or higher
+- [Groq API Key](https://console.groq.com/keys) (Free tier available)
+- *(Optional)* [Ollama](https://ollama.com/) if running fully local models
+
+### 2. Clone and Install
 ```bash
+git clone https://github.com/syedaftab-dev/Multi-Tool-LLM-Agent.git
+cd Multi-Tool-LLM-Agent
+
+# Create and activate virtual environment
+python -m venv venv
+# On Windows:
+.\venv\Scripts\activate
+# On Linux/macOS:
+source venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-2. Create your `.env` file (or copy `.env.example`):
-
+### 3. Configure Environment Variables
+Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
-
-3. Add your Groq API key in `.env`:
-
+Update `.env` with your API credentials:
 ```env
+# Provider: "groq" (recommended) or "ollama"
 LLM_PROVIDER=groq
-GROQ_API_KEY=gsk_your_key_here
-GROQ_MODEL=llama-3.3-70b-versatile
+
+# Groq Configuration
+GROQ_API_KEY=gsk_your_actual_groq_api_key_here
+GROQ_MODEL=openai/gpt-oss-120b
+
+# Optional Local Fallback
+OLLAMA_MODEL=phi3
+OLLAMA_BASE_URL=http://localhost:11434
+
+# Hyperparameters
+TEMPERATURE=0.1
+MAX_TOKENS=1024
 ```
 
-*(Optional) If using Ollama locally instead, set `LLM_PROVIDER=ollama` and ensure `ollama serve` is running.*
-
-4. Verify setup:
-
+### 4. Verify Installation
+Run the automated environment check:
 ```bash
 python setup.py
 ```
 
-The `.env` file is ignored by Git, so your local settings stay private.
+---
 
-## Run The Agent
+## 💻 Running the Interfaces
 
-Run the basic agent:
-
-```bash
-python agent.py
-```
-
-Run the memory-enabled agent:
-
-```bash
-python agent_with_memory.py
-```
-
-Run the LangGraph agent:
-
-```bash
-python agent_langgraph.py
-```
-
-Run the Streamlit web UI:
-
+### 🌟 Streamlit Dashboard (Recommended)
+Launch the dark-themed editorial chat UI:
 ```bash
 streamlit run app.py
 ```
+Open your browser at `http://localhost:8501`.
 
-## Run The FastAPI Backend
-
-If needed, install API dependencies:
-
-```bash
-pip install fastapi uvicorn pydantic
-```
-
-Start the API server:
-
+### ⚡ FastAPI Backend
+Run the high-performance REST API:
 ```bash
 uvicorn backend.api:app --reload --port 8000
 ```
+Interactive Swagger docs will be available at `http://localhost:8000/docs`.
 
-Useful API endpoints:
+**Key Endpoints:**
+- `GET /health` — Service health and active LLM provider info
+- `GET /tools` — List registered tools and signatures
+- `POST /chat` — Send a message within a session
+- `GET /sessions` — List active sessions
+- `DELETE /sessions/{session_id}` — Clear a session
 
-```text
-GET  /health
-GET  /tools
-POST /chat
-GET  /sessions
-GET  /sessions/{session_id}
-DELETE /sessions/{session_id}
-```
-
-## Run The React Frontend
-
-Open a second terminal:
-
+### ⚛️ React + Vite Frontend
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-The frontend usually runs at:
+### 🖥️ CLI Agent
+```bash
+# Basic tool calling
+python agent.py
 
-```text
-http://localhost:5173
+# Memory-enabled conversational CLI
+python agent_with_memory.py
+
+# LangGraph compiled state graph
+python agent_langgraph.py
 ```
 
-Make sure the FastAPI backend is running on port `8000` before using the frontend chat.
+---
 
-## Tools
+## 🧪 Testing
 
-| Tool | Purpose | Example |
-| --- | --- | --- |
-| Calculator | Evaluates math expressions | `sqrt(144)`, `2**10` |
-| Knowledge Base | Looks up technical topics | `python`, `langchain`, `ollama` |
-| DateTime | Returns current date and time | `date`, `time`, `full` |
-
-## Run Tests
-
+Run automated unit tests to verify tool accuracy:
 ```bash
 python -m pytest tests -v
 ```
 
-## GitHub Push Commands
+---
 
-If this is a new repository:
+## ☁️ Deployment
 
-```bash
-git init
-git branch -M main
-git add .
-git commit -m "Initial commit"
-git remote add origin https://github.com/YOUR_USERNAME/Basic_Agent.git
-git push -u origin main
-```
+### Streamlit Community Cloud (1-Click Free Deploy)
+1. Fork or push this repository to your GitHub account.
+2. Visit [share.streamlit.io](https://share.streamlit.io/) and select **New app**.
+3. Choose repository `syedaftab-dev/Multi-Tool-LLM-Agent`, branch `main`, and main file `app.py`.
+4. Under **Advanced settings... -> Secrets**, add:
+   ```toml
+   LLM_PROVIDER = "groq"
+   GROQ_API_KEY = "gsk_your_groq_api_key_here"
+   GROQ_MODEL = "openai/gpt-oss-120b"
+   ```
+5. Click **Deploy!**
 
-Replace `YOUR_USERNAME` with your GitHub username.
+---
 
-## Notes
+## 📄 License
 
-- Do not commit `.env`, `venv/`, `__pycache__/`, `frontend/node_modules/`, or build output.
-- Keep Ollama running before starting the agent.
-- Use a model that works well with tool calling for best results.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

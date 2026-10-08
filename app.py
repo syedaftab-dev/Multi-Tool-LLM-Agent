@@ -35,54 +35,12 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* Default Theme Variables (Dark Mode default) */
-:root {
-  --bg: #141413;
-  --panel: #1B1B19;
-  --ink: #ECEAE3;
-  --mute: #8F8C82;
-  --line: #2C2C29;
-  --accent: #6FC3A5;
-  --accent-ink: #0F1A15;
-  --chip: #242421;
-}
-
-/* System light preference */
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --bg: #F5F3EE;
-    --panel: #FBFAF7;
-    --ink: #1A1A17;
-    --mute: #77746B;
-    --line: #E2DED4;
-    --accent: #1F5C4B;
-    --accent-ink: #FFFFFF;
-    --chip: #ECE9E0;
-  }
-}
-
-/* Explicit Light Theme (Matches Agent UI minimal HTML) */
-:root[data-theme="light"],
-html[data-theme="light"],
-body[data-theme="light"],
-.stApp[data-theme="light"],
-[data-theme="light"] {
-  --bg: #F5F3EE !important;
-  --panel: #FBFAF7 !important;
-  --ink: #1A1A17 !important;
-  --mute: #77746B !important;
-  --line: #E2DED4 !important;
-  --accent: #1F5C4B !important;
-  --accent-ink: #FFFFFF !important;
-  --chip: #ECE9E0 !important;
-}
-
-/* Explicit Dark Theme */
-:root[data-theme="dark"],
-html[data-theme="dark"],
-body[data-theme="dark"],
-.stApp[data-theme="dark"],
-[data-theme="dark"] {
+/* Permanent Dark Theme Variables (Agent Minimal UI) */
+:root,
+html,
+body,
+.stApp,
+[data-theme] {
   --bg: #141413 !important;
   --panel: #1B1B19 !important;
   --ink: #ECEAE3 !important;
@@ -420,74 +378,6 @@ button[kind="primary"] {
 </style>
 """, unsafe_allow_html=True)
 
-# ── Dynamic Theme Synchronization with Streamlit Settings ────
-import streamlit.components.v1 as components
-
-active_theme_pref = st.session_state.get("theme", "auto")
-
-components.html(
-    f"""
-    <script>
-    (function() {{
-        const forced = "{active_theme_pref}";
-        function detectAndApplyTheme() {{
-            try {{
-                const pWin = window.parent;
-                const pDoc = pWin.document;
-                if (!pWin || !pDoc) return;
-
-                let theme = forced;
-
-                // If not forced via sidebar toggle, detect from Streamlit Settings menu
-                if (!theme || theme === 'auto') {{
-                    // Check Streamlit localStorage keys for stActiveTheme
-                    for (let i = 0; i < pWin.localStorage.length; i++) {{
-                        const k = pWin.localStorage.key(i);
-                        if (k && k.includes('stActiveTheme')) {{
-                            try {{
-                                const val = JSON.parse(pWin.localStorage.getItem(k));
-                                if (val && val.base) {{
-                                    theme = val.base;
-                                }}
-                            }} catch(e) {{}}
-                        }}
-                    }}
-
-                    // Fallback to prefers-color-scheme if not found in storage
-                    if (!theme || theme === 'auto') {{
-                        if (pWin.matchMedia && pWin.matchMedia('(prefers-color-scheme: light)').matches) {{
-                            theme = 'light';
-                        }} else {{
-                            theme = 'dark';
-                        }}
-                    }}
-                }}
-
-                const root = pDoc.documentElement;
-                const body = pDoc.body;
-                const app = pDoc.querySelector('.stApp');
-
-                if (root && root.getAttribute('data-theme') !== theme) {{
-                    root.setAttribute('data-theme', theme);
-                }}
-                if (body && body.getAttribute('data-theme') !== theme) {{
-                    body.setAttribute('data-theme', theme);
-                }}
-                if (app && app.getAttribute('data-theme') !== theme) {{
-                    app.setAttribute('data-theme', theme);
-                }}
-            }} catch(err) {{}}
-        }}
-
-        detectAndApplyTheme();
-        setInterval(detectAndApplyTheme, 200);
-    }})();
-    </script>
-    """,
-    height=0,
-    width=0,
-)
-
 
 # ── Conversation Session Store ───────────────────────────────
 if "chats" not in st.session_state:
@@ -597,22 +487,7 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
-
-    # Theme Switcher in Sidebar
-    theme_pref = st.session_state.get("theme", "auto")
-    if theme_pref == "light":
-        theme_icon = "🌙"
-        theme_btn_label = "Switch to Dark theme"
-        target_t = "dark"
-    else:
-        theme_icon = "☀️"
-        theme_btn_label = "Switch to Light theme"
-        target_t = "light"
-
-    if st.button(f"{theme_icon}  {theme_btn_label}", use_container_width=True, key="theme_toggle_btn"):
-        st.session_state.theme = target_t
-        st.rerun()
+    st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
 
     # Clear History Button
     if st.button("Clear history", use_container_width=True):
