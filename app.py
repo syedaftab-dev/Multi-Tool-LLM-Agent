@@ -25,7 +25,6 @@ from tools import calculator, knowledge_lookup, get_current_datetime
 # ── Page Configuration ───────────────────────────────────────
 st.set_page_config(
     page_title="Agent",
-    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -421,7 +420,7 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     # New Chat Button
-    if st.button("➕  New chat", use_container_width=True):
+    if st.button("+ New chat", use_container_width=True):
         new_id = str(uuid.uuid4())
         st.session_state.chats[new_id] = {
             "id": new_id,
@@ -560,15 +559,15 @@ if len(current_chat["messages"]) == 0:
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("🧮 Math\n\nSolve expressions and equations\n\n`sqrt(144) + 25*3`", use_container_width=True):
+        if st.button("Math\n\nSolve expressions and equations\n\n`sqrt(144) + 25*3`", use_container_width=True):
             st.session_state["pending_prompt"] = "sqrt(144) + 25*3"
             st.rerun()
     with col2:
-        if st.button("📖 Tech lookup\n\nFind docs and explain concepts\n\n`What is LangGraph?`", use_container_width=True):
+        if st.button("Tech lookup\n\nFind docs and explain concepts\n\n`What is LangGraph?`", use_container_width=True):
             st.session_state["pending_prompt"] = "What is LangGraph?"
             st.rerun()
     with col3:
-        if st.button("🕒 Date and time\n\nCheck the current moment\n\n`Today's date`", use_container_width=True):
+        if st.button("Date and time\n\nCheck the current moment\n\n`Today's date`", use_container_width=True):
             st.session_state["pending_prompt"] = "Today's date"
             st.rerun()
 
@@ -634,10 +633,10 @@ if prompt_to_run:
         except Exception as e:
             err = str(e)
             if "GROQ_API_KEY" in err or "api_key" in err.lower():
-                st.error("⚠️ Groq API Key error. Please verify GROQ_API_KEY in your .env file.")
+                st.error("Groq API Key error. Please verify GROQ_API_KEY in your .env file or Streamlit Secrets.")
             elif "Connection refused" in err:
-                st.error("⚠️ Could not connect to LLM server. (If using Ollama, ensure 'ollama serve' is running)")
+                st.error("Could not connect to LLM server. (If using Ollama, ensure 'ollama serve' is running)")
             else:
-                st.error(f"⚠️ Error: {err}")
+                st.error(f"Error: {err}")
 
 st.markdown('<div class="composer-hint">Press Enter to send</div>', unsafe_allow_html=True)

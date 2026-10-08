@@ -1,16 +1,19 @@
 <div align="center">
 
-# ⚡ Multi-Tool AI Agent
+# Multi-Tool AI Agent
 
-**Autonomous ReAct Agent powered by Groq LPU Inference, LangChain & LangGraph**
+**Autonomous ReAct Agent powered by Groq LPU Inference, LangChain, and LangGraph**
 
+[![Live Demo](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://multi-t-agent.streamlit.app/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![LangChain](https://img.shields.io/badge/LangChain-v0.3+-green.svg)](https://python.langchain.com/)
 [![LangGraph](https://img.shields.io/badge/LangGraph-v0.2+-orange.svg)](https://langchain-ai.github.io/langgraph/)
-[![Groq LPU](https://img.shields.io/badge/Groq-Ultra--Fast_Inference-red.svg)](https://groq.com/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.38+-FF4B4B.svg)](https://streamlit.io/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg)](https://fastapi.tiangolo.com/)
+[![Groq LPU](https://img.shields.io/badge/Groq-Cloud_Inference-red.svg)](https://groq.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+<br/>
+
+**Live Deployment:** [https://multi-t-agent.streamlit.app/](https://multi-t-agent.streamlit.app/)
 
 <br/>
 
@@ -19,27 +22,27 @@
   <img src="assets/dashboard.png" alt="Multi-Tool AI Agent Dashboard" width="900" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);" />
 </p>
 
-*Modern ChatGPT-style dark editorial dashboard with sidebar session management, real-time tool calling, and sub-second Groq responses.*
+*Minimal editorial dashboard featuring thread management, session persistence, and real-time tool calling.*
 
 </div>
 
 ---
 
-## 📌 Overview
+## Overview
 
-**Multi-Tool AI Agent** is an end-to-end intelligent assistant built with **LangChain**, **LangGraph**, and **Groq Cloud API** (with offline **Ollama** fallback). The system implements an autonomous **ReAct (Reasoning + Acting)** loop, allowing the LLM to inspect user queries, dynamically select and execute Python tools, evaluate execution outputs, and synthesize accurate responses.
+Multi-Tool AI Agent is an end-to-end intelligent assistant built with LangChain, LangGraph, and Groq Cloud API (with local Ollama fallback). The system implements an autonomous ReAct (Reasoning + Acting) execution cycle, enabling the language model to analyze user queries, dynamically select and invoke deterministic tools, evaluate observations, and synthesize precise responses.
 
-The application includes:
-- **Editorial Streamlit Dashboard**: A minimalist, dark-themed UI featuring conversation threads, title generation, chat deletion, and suggestions.
-- **REST API Backend**: FastAPI service supporting asynchronous streaming, session history, and tool metadata endpoints.
-- **Modern React Frontend**: Clean Vite + React client for headless integrations.
-- **Command Line Interfaces**: Terminal runners with CLI memory inspection and LangGraph workflow visualization.
+### Key Capabilities
+- **Streamlit Dashboard**: Dark editorial interface with thread history, automated chat labeling, and conversational memory.
+- **FastAPI REST Backend**: Asynchronous endpoints supporting multi-session persistence, health monitoring, and tool inspection.
+- **React Frontend**: Vite-powered client interface for headless integration.
+- **CLI Workflows**: Terminal runners with memory inspection and compiled LangGraph execution graphs.
 
 ---
 
-## 🏛️ System Architecture
+## System Architecture
 
-The following diagram illustrates the flow of execution from the client layer through the LangGraph ReAct agent orchestration to the tool execution and LLM inference engine:
+The diagram below outlines the system data flow across the client interfaces, API orchestration layer, LangGraph ReAct engine, LLM inference provider, and tool execution layer.
 
 ```mermaid
 flowchart TD
@@ -67,9 +70,9 @@ flowchart TD
     end
 
     subgraph Tool Execution Engine
-        CALC[🧮 Math Calculator\nAST / Sympy Evaluator]
-        KB[📖 Tech Knowledge Base\nIndexed Vector & Docs]
-        TIME[🕒 Date & Time Tool\nSystem Clock & Timezones]
+        CALC[Math Calculator\nAST / Sympy Evaluator]
+        KB[Tech Knowledge Base\nIndexed Documentation]
+        TIME[Date & Time Tool\nSystem Clock & Timezones]
     end
 
     UI -->|Session State| STATE
@@ -96,26 +99,26 @@ flowchart TD
     DECIDE -->|JSON Payload| FASTAPI
 ```
 
-### Workflow Execution Details:
-1. **User Request**: The user submits a query through the Streamlit interface or API.
-2. **Context Compilation**: Previous conversation history is retrieved from session state and formatted as LangChain `HumanMessage` and `AIMessage` objects.
-3. **Reasoning & Tool Call**: The agent invokes Groq's high-speed inference engine equipped with tool schemas.
-4. **Tool Execution**: If a calculation, technical documentation lookup, or current time is needed, the respective Python tool executes safely in an isolated environment.
-5. **Observation & Synthesis**: The tool's output is injected into the agent scratchpad, producing a verified final response.
+### Execution Pipeline
+1. **User Request**: The user submits a prompt via the Streamlit interface, React frontend, or API endpoint.
+2. **Context Compilation**: Previous conversation history is retrieved from the session store and formatted as structured LangChain message objects.
+3. **Reasoning Step**: The agent evaluates the prompt against registered tool definitions using Groq inference.
+4. **Tool Execution**: If a calculation, documentation lookup, or current timestamp is required, the matching tool executes in an isolated environment.
+5. **Observation & Synthesis**: The execution result is fed back into the agent loop to generate the final response.
 
 ---
 
-## 🛠️ Built-in Tools
+## Built-in Tools
 
-| Tool | Capability | Example Queries |
+| Tool | Functionality | Example Queries |
 | :--- | :--- | :--- |
-| **🧮 Calculator** | Evaluates mathematical expressions, powers, roots, and equations | `"sqrt(144) + 25*3"`, `"2**16 - 1024"` |
-| **📖 Knowledge Base** | Retrieves documentation for frameworks, architectures, and libraries | `"What is LangGraph?"`, `"Explain ReAct prompting"` |
-| **🕒 Date & Time** | Fetches the current system time, calendar date, and timestamps | `"What day is it today?"`, `"Current UTC time"` |
+| **Calculator** | Evaluates mathematical expressions, powers, and roots | `sqrt(144) + 25*3`, `2**16 - 1024` |
+| **Knowledge Base** | Retrieves technical documentation for libraries and frameworks | `What is LangGraph?`, `Explain ReAct prompting` |
+| **Date and Time** | Returns current calendar date, timestamps, and system time | `What day is it today?`, `Current UTC time` |
 
 ---
 
-## 📁 Repository Structure
+## Project Structure
 
 ```text
 Multi-Tool-LLM-Agent/
@@ -134,26 +137,26 @@ Multi-Tool-LLM-Agent/
 │   └── test_tools.py             # Pytest suite for tool verification
 ├── .streamlit/
 │   └── config.toml               # Streamlit theme and server configuration
-├── .env.example                  # Environment template
-├── agent.py                      # Basic CLI agent
+├── .env.example                  # Environment variable template
+├── agent.py                      # Basic CLI agent runner
 ├── agent_langgraph.py            # LangGraph ReAct workflow runner
-├── agent_with_memory.py          # Memory-enabled CLI runner
+├── agent_with_memory.py          # Memory-enabled conversational runner
 ├── app.py                        # Streamlit dark editorial dashboard
-├── config.py                     # Centralized environment & secrets loader
-├── requirements.txt              # Python production dependencies
-└── setup.py                      # Environment & dependency verification script
+├── config.py                     # Centralized configuration and secrets loader
+├── requirements.txt              # Production Python dependencies
+└── setup.py                      # Environment and dependency verification script
 ```
 
 ---
 
-## 🚀 Quickstart Guide
+## Quickstart
 
 ### 1. Prerequisites
 - Python 3.10 or higher
 - [Groq API Key](https://console.groq.com/keys) (Free tier available)
-- *(Optional)* [Ollama](https://ollama.com/) if running fully local models
+- *(Optional)* [Ollama](https://ollama.com/) for local offline fallback
 
-### 2. Clone and Install
+### 2. Installation
 ```bash
 git clone https://github.com/syedaftab-dev/Multi-Tool-LLM-Agent.git
 cd Multi-Tool-LLM-Agent
@@ -169,12 +172,13 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Configure Environment Variables
+### 3. Environment Configuration
 Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
-Update `.env` with your API credentials:
+
+Configure your credentials in `.env`:
 ```env
 # Provider: "groq" (recommended) or "ollama"
 LLM_PROVIDER=groq
@@ -192,83 +196,77 @@ TEMPERATURE=0.1
 MAX_TOKENS=1024
 ```
 
-### 4. Verify Installation
-Run the automated environment check:
+### 4. Verification
+Run the setup check script to ensure all dependencies and API keys are properly configured:
 ```bash
 python setup.py
 ```
 
 ---
 
-## 💻 Running the Interfaces
+## Running Applications
 
-### 🌟 Streamlit Dashboard (Recommended)
-Launch the dark-themed editorial chat UI:
+### Streamlit Dashboard
 ```bash
 streamlit run app.py
 ```
-Open your browser at `http://localhost:8501`.
+Access the application locally at `http://localhost:8501` or visit the live deployment at [multi-t-agent.streamlit.app](https://multi-t-agent.streamlit.app/).
 
-### ⚡ FastAPI Backend
-Run the high-performance REST API:
+### FastAPI REST Server
 ```bash
 uvicorn backend.api:app --reload --port 8000
 ```
-Interactive Swagger docs will be available at `http://localhost:8000/docs`.
+Interactive OpenAPI documentation will be accessible at `http://localhost:8000/docs`.
 
-**Key Endpoints:**
-- `GET /health` — Service health and active LLM provider info
-- `GET /tools` — List registered tools and signatures
-- `POST /chat` — Send a message within a session
-- `GET /sessions` — List active sessions
-- `DELETE /sessions/{session_id}` — Clear a session
-
-### ⚛️ React + Vite Frontend
+### React Frontend
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### 🖥️ CLI Agent
+### Command Line Runners
 ```bash
-# Basic tool calling
+# Basic agent execution
 python agent.py
 
-# Memory-enabled conversational CLI
+# Conversational CLI with memory
 python agent_with_memory.py
 
-# LangGraph compiled state graph
+# Compiled LangGraph state machine
 python agent_langgraph.py
 ```
 
 ---
 
-## 🧪 Testing
+## Testing
 
-Run automated unit tests to verify tool accuracy:
+Execute the unit test suite:
 ```bash
 python -m pytest tests -v
 ```
 
 ---
 
-## ☁️ Deployment
+## Deployment
 
-### Streamlit Community Cloud (1-Click Free Deploy)
-1. Fork or push this repository to your GitHub account.
-2. Visit [share.streamlit.io](https://share.streamlit.io/) and select **New app**.
-3. Choose repository `syedaftab-dev/Multi-Tool-LLM-Agent`, branch `main`, and main file `app.py`.
-4. Under **Advanced settings... -> Secrets**, add:
+The application is deployed on **Streamlit Community Cloud**:
+- **Live URL**: [https://multi-t-agent.streamlit.app/](https://multi-t-agent.streamlit.app/)
+
+### Deploying Your Own Instance
+1. Fork or push this repository to GitHub.
+2. Sign in to [share.streamlit.io](https://share.streamlit.io/) and create a **New app**.
+3. Select your repository, branch `main`, and main file `app.py`.
+4. In **Advanced settings... -> Secrets**, configure:
    ```toml
    LLM_PROVIDER = "groq"
    GROQ_API_KEY = "gsk_your_groq_api_key_here"
    GROQ_MODEL = "openai/gpt-oss-120b"
    ```
-5. Click **Deploy!**
+5. Click **Deploy**.
 
 ---
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
