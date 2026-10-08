@@ -1,30 +1,31 @@
-# Basic AI Agent
+# Multi-Tool AI Agent (Groq & Ollama)
 
-A local AI agent project powered by Ollama, LangChain, and LangGraph. The agent runs on your machine, can use tools, remembers conversation context, and includes both command-line and web interfaces.
+A high-performance AI agent project powered by **Groq API** (ultra-fast cloud inference) and **Ollama** (optional local fallback), built with **LangChain** and **LangGraph**. The agent can use tools, remembers conversation context, and includes CLI, Streamlit, and FastAPI + React interfaces.
 
 ## Features
 
-- Local LLM support through Ollama
-- ReAct-style agent workflow using LangChain and LangGraph
-- Calculator tool for math expressions
-- Knowledge base tool for technical topics
-- Date and time tool
-- Conversation memory support
-- Streamlit chat UI
-- FastAPI backend for API-based chat
-- React + Vite frontend
-- Unit tests for tools
+- **Groq API support** for ultra-fast LPU inference (e.g., `llama-3.3-70b-versatile`, `llama-3.1-8b-instant`)
+- **Ollama support** for 100% offline local models (e.g., `phi3`, `llama3.2`)
+- **ReAct-style agent workflow** using LangChain and LangGraph
+- **Calculator tool** for math expressions
+- **Knowledge base tool** for technical topics
+- **Date and time tool**
+- **Conversation memory support**
+- **Streamlit chat UI** with provider & model switcher
+- **FastAPI backend** for API-based chat
+- **React + Vite frontend**
+- **Unit tests for tools**
 
 ## Project Structure
 
 ```text
 Basic_Agent/
-+-- agent.py                  # Basic agent example
++-- agent.py                  # Basic agent CLI
 +-- agent_with_memory.py      # Agent with conversation memory
 +-- agent_langgraph.py        # LangGraph-based agent
 +-- app.py                    # Streamlit web app
 +-- config.py                 # Environment-based configuration
-+-- setup.py                  # Local setup checker
++-- setup.py                  # Environment setup checker
 +-- requirements.txt          # Python dependencies
 +-- backend/
 |   +-- api.py                # FastAPI backend
@@ -42,59 +43,37 @@ Basic_Agent/
 ## Requirements
 
 - Python 3.9 or newer
-- Node.js and npm, for the React frontend
-- Ollama installed locally
-- An Ollama model such as `phi3`, `llama3.2`, or `mistral`
+- **Groq API Key** (Free from https://console.groq.com/keys) OR Ollama installed locally
+- Node.js and npm (optional, for React frontend)
 
-## Setup
+## Quickstart
 
-Clone the project and enter the folder:
-
-```bash
-git clone https://github.com/YOUR_USERNAME/Basic_Agent.git
-cd Basic_Agent
-```
-
-Create and activate a virtual environment:
-
-```bash
-python -m venv venv
-venv\Scripts\activate
-```
-
-Install Python dependencies:
+1. Install Python dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Install Ollama from:
-
-```text
-https://ollama.com/download
-```
-
-Pull a local model:
+2. Create your `.env` file (or copy `.env.example`):
 
 ```bash
-ollama pull phi3
+cp .env.example .env
 ```
 
-Start Ollama:
-
-```bash
-ollama serve
-```
-
-## Configuration
-
-Create a `.env` file in the project root:
+3. Add your Groq API key in `.env`:
 
 ```env
-OLLAMA_MODEL=phi3
-OLLAMA_BASE_URL=http://localhost:11434
-TEMPERATURE=0.1
-MAX_TOKENS=1024
+LLM_PROVIDER=groq
+GROQ_API_KEY=gsk_your_key_here
+GROQ_MODEL=llama-3.3-70b-versatile
+```
+
+*(Optional) If using Ollama locally instead, set `LLM_PROVIDER=ollama` and ensure `ollama serve` is running.*
+
+4. Verify setup:
+
+```bash
+python setup.py
 ```
 
 The `.env` file is ignored by Git, so your local settings stay private.

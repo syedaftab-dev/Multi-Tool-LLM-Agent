@@ -23,13 +23,21 @@ from pydantic import BaseModel, Field
 # Ensure project root is on path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from langchain_ollama import ChatOllama
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.prebuilt import create_react_agent
 
-from config import OLLAMA_MODEL, OLLAMA_BASE_URL, TEMPERATURE
+from config import (
+    get_llm,
+    LLM_PROVIDER,
+    GROQ_MODEL,
+    GROQ_API_KEY,
+    OLLAMA_MODEL,
+    OLLAMA_BASE_URL,
+    TEMPERATURE,
+)
 from tools import calculator, knowledge_lookup, get_current_datetime
 
+DEFAULT_MODEL = GROQ_MODEL if LLM_PROVIDER == "groq" else OLLAMA_MODEL
 
 # ── In-memory session store ──────────────────────────────────
 sessions: dict[str, list[dict]] = {}
@@ -39,7 +47,8 @@ sessions: dict[str, list[dict]] = {}
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, description="User message")
     session_id: str | None = Field(None, description="Session ID for conversation continuity")
-    model: str = Field(default=OLLAMA_MODEL, description="Ollama model name")
+    model: str = Field(default=DEFAULT_MODEL, description="Model name (e.g. llama-3.3-70b-versatile or phi3)")
+    provider: str | None = Field(default=None, description="LLM provider: 'groq' or 'ollama'")
     temperature: float = Field(default=TEMPERATURE, ge=0.0, le=1.0)
 
 
@@ -65,17 +74,25 @@ class ToolInfo(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
+    provider: str
     model: str
-    ollama_url: str
+    ollama_url: str = ""
     timestamp: str
 
 
 # ── Agent Factory ────────────────────────────────────────────
-def create_agent(model_name: str, temperature: float):
-    """Create a fresh ReAct agent with the given model config."""
-    llm = ChatOllama(
+def create_agent(model_name: str, temperature: float, provider: str | None = None):
+    """Create a fresh ReAct agent with the given model config (Groq or Ollama)."""
+    # Auto-detect provider if not explicitly given
+    if not provider:
+        if any(prefix in model_name.lower() for prefix in ["llama", "mixtral", "gemma"]) and "ollama" not in model_name.lower() and LLM_PROVIDER == "groq":
+            provider = "groq"
+        elif model_name in ["phi3", "mistral"] and not os.getenv("GROQ_API_KEY"):
+            provider = "ollama"
+
+    llm = get_llm(
+        provider=provider,
         model=model_name,
-        base_url=OLLAMA_BASE_URL,
         temperature=temperature,
     )
 
@@ -168,38 +185,52 @@ def fix_raw_tool_call(response_text: str) -> tuple[str, list[str]]:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
-    print(f"  Agent API starting | Model: {OLLAMA_MODEL} | Ollama: {OLLAMA_BASE_URL}")
+    active_model = GROQ_MODEL if LLM_PROVIDER == "groq" else OLLAMA_MODEL
+    print(f"  Agent API starting | Provider: {LLM_PROVIDER} | Model: {active_model}")
     yield
     print("  Agent API shutting down")
 
 
 # ── FastAPI App ──────────────────────────────────────────────
 app = FastAPI(
-    title="Local AI Agent API",
-    description="REST API for a local AI agent powered by Ollama + LangGraph",
+    title="AI Agent API",
+    description="REST API for an AI agent powered by Groq / Ollama + LangGraph",
     version="1.0.0",
     lifespan=lifespan,
 )
 
-# CORS — allow React dev server
+# CORS — allow all local frontends
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:5174"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
+from fastapi.responses import HTMLResponse, FileResponse
+
 # ── Endpoints ────────────────────────────────────────────────
+
+@app.get("/", response_class=HTMLResponse)
+async def serve_dashboard():
+    """Serve the minimal Agent dashboard."""
+    html_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Agent UI (minimal).html")
+    if os.path.exists(html_file):
+        return FileResponse(html_file)
+    return HTMLResponse("<h1>Agent Backend Running</h1>")
+
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
-    """Check if the API and Ollama connection are healthy."""
+    """Check if the API and LLM provider connection are configured."""
+    active_model = GROQ_MODEL if LLM_PROVIDER == "groq" else OLLAMA_MODEL
     return HealthResponse(
         status="ok",
-        model=OLLAMA_MODEL,
-        ollama_url=OLLAMA_BASE_URL,
+        provider=LLM_PROVIDER,
+        model=active_model,
+        ollama_url=OLLAMA_BASE_URL if LLM_PROVIDER == "ollama" else "N/A (Groq Cloud)",
         timestamp=datetime.now().isoformat(),
     )
 
@@ -242,7 +273,7 @@ async def chat(request: ChatRequest):
 
     try:
         # Create agent with requested config
-        agent = create_agent(request.model, request.temperature)
+        agent = create_agent(request.model, request.temperature, request.provider)
 
         # Build full history and invoke
         full_history = build_message_history(sessions[session_id])
@@ -273,10 +304,15 @@ async def chat(request: ChatRequest):
         # Remove the failed user message from history
         sessions[session_id].pop()
         error_msg = str(e)
+        if "GROQ_API_KEY" in error_msg or "api_key" in error_msg.lower():
+            raise HTTPException(
+                status_code=401,
+                detail=f"Groq API key error: {error_msg}. Please check GROQ_API_KEY in your .env file.",
+            )
         if "Connection refused" in error_msg or "connection" in error_msg.lower():
             raise HTTPException(
                 status_code=503,
-                detail="Ollama server is not running. Start it with: ollama serve",
+                detail="Connection error: LLM service is unreachable. (If using Ollama, run: ollama serve)",
             )
         raise HTTPException(status_code=500, detail=f"Agent error: {error_msg}")
 

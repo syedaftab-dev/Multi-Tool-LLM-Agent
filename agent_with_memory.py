@@ -29,11 +29,10 @@ from rich.panel import Panel
 from rich.markdown import Markdown
 from rich.table import Table
 
-from langchain_ollama import ChatOllama
 from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
 
-from config import OLLAMA_MODEL, OLLAMA_BASE_URL, TEMPERATURE
+from config import get_llm, LLM_PROVIDER, GROQ_MODEL, OLLAMA_MODEL
 from tools import calculator, knowledge_lookup, get_current_datetime
 
 console = Console(force_terminal=True)
@@ -42,12 +41,8 @@ console = Console(force_terminal=True)
 def create_agent_with_memory():
     """Create a ReAct agent with conversation memory and multiple tools."""
 
-    # ── Connect to the local Ollama model ────────────────────
-    llm = ChatOllama(
-        model=OLLAMA_MODEL,
-        base_url=OLLAMA_BASE_URL,
-        temperature=TEMPERATURE,
-    )
+    # ── Connect to configured LLM (Groq or Ollama) ───────────
+    llm = get_llm()
 
     # ── Register all tools ───────────────────────────────────
     tools = [calculator, knowledge_lookup, get_current_datetime]
@@ -57,7 +52,7 @@ def create_agent_with_memory():
 
     # ── System prompt for better behavior ────────────────────
     system_message = (
-        "You are a helpful AI assistant running locally. "
+        "You are a helpful AI assistant. "
         "You have access to tools: a calculator for math, "
         "a knowledge base for tech/programming topics, and "
         "a datetime tool for the current date and time. "
@@ -92,10 +87,11 @@ def display_tools_table():
 def main():
     """Run the agent with memory in an interactive CLI loop."""
 
+    current_model = GROQ_MODEL if LLM_PROVIDER == "groq" else OLLAMA_MODEL
     console.print(
         Panel(
             "[bold magenta]AI Agent with Memory[/bold magenta]\n"
-            f"[dim]Model: {OLLAMA_MODEL} | Tools: 3 | Memory: Enabled[/dim]\n"
+            f"[dim]Provider: {LLM_PROVIDER.upper()} | Model: {current_model} | Tools: 3 | Memory: Enabled[/dim]\n"
             "[dim]Type 'quit' to stop, 'tools' to see available tools,[/dim]\n"
             "[dim]'clear' to reset conversation memory.[/dim]",
             border_style="magenta",

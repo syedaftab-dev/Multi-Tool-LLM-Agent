@@ -29,7 +29,6 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
 
-from langchain_ollama import ChatOllama
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
@@ -38,7 +37,7 @@ from langgraph.checkpoint.memory import MemorySaver
 
 from typing_extensions import TypedDict
 
-from config import OLLAMA_MODEL, OLLAMA_BASE_URL, TEMPERATURE
+from config import get_llm, LLM_PROVIDER, GROQ_MODEL, OLLAMA_MODEL
 from tools import calculator, knowledge_lookup, get_current_datetime
 
 console = Console(force_terminal=True)
@@ -63,17 +62,13 @@ def build_agent_graph():
     # ── LLM with tool binding ────────────────────────────────
     tools = [calculator, knowledge_lookup, get_current_datetime]
 
-    llm = ChatOllama(
-        model=OLLAMA_MODEL,
-        base_url=OLLAMA_BASE_URL,
-        temperature=TEMPERATURE,
-    )
+    llm = get_llm()
     llm_with_tools = llm.bind_tools(tools)
 
     # ── System prompt ────────────────────────────────────────
     system_msg = SystemMessage(
         content=(
-            "You are a helpful AI assistant running locally via Ollama. "
+            "You are a helpful AI assistant. "
             "You have tools for calculations, knowledge lookups, and "
             "getting the current date/time. Use them when appropriate. "
             "Be concise, accurate, and friendly."
@@ -110,10 +105,11 @@ def build_agent_graph():
 def main():
     """Run the LangGraph agent in an interactive CLI loop."""
 
+    current_model = GROQ_MODEL if LLM_PROVIDER == "groq" else OLLAMA_MODEL
     console.print(
         Panel(
             "[bold yellow]LangGraph Agent[/bold yellow]\n"
-            f"[dim]Model: {OLLAMA_MODEL} | Architecture: Graph-based[/dim]\n"
+            f"[dim]Provider: {LLM_PROVIDER.upper()} | Model: {current_model} | Architecture: Graph-based[/dim]\n"
             "[dim]Type 'quit' to stop, 'graph' to see the structure.[/dim]",
             border_style="yellow",
             expand=False,

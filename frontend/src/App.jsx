@@ -9,7 +9,7 @@ function App() {
   const [messages, setMessages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [sessionId, setSessionId] = useState(null)
-  const [model, setModel] = useState('llama3.2')
+  const [model, setModel] = useState('llama-3.3-70b-versatile')
   const [temperature, setTemperature] = useState(0.1)
   const [tools, setTools] = useState([])
   const [backendStatus, setBackendStatus] = useState('checking')
@@ -25,6 +25,10 @@ function App() {
     try {
       const res = await fetch(`${API_URL}/health`)
       if (res.ok) {
+        const data = await res.json()
+        if (data.model) {
+          setModel(data.model)
+        }
         setBackendStatus('connected')
       } else {
         setBackendStatus('error')

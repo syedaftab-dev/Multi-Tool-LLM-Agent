@@ -45,7 +45,7 @@ function Sidebar({ model, setModel, temperature, setTemperature, tools, onClear,
             className="config-input"
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            placeholder="e.g., llama3.2, phi3"
+            placeholder="e.g., llama-3.3-70b-versatile, llama-3.1-8b-instant"
           />
         </div>
 

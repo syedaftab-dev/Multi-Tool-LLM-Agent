@@ -9,11 +9,68 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+# Helper to retrieve config from env or Streamlit Cloud Secrets
+def get_config_val(key: str, default: str = "") -> str:
+    val = os.getenv(key)
+    if val:
+        return val
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets") and key in st.secrets:
+            return str(st.secrets[key])
+    except Exception:
+        pass
+    return default
+
+# ── LLM Provider Settings ────────────────────────────────────
+# Supported providers: "groq", "ollama"
+# Default to "groq", but falls back or can be switched via LLM_PROVIDER in .env or st.secrets
+LLM_PROVIDER: str = get_config_val("LLM_PROVIDER", "groq").lower()
+
+# ── Groq Settings ────────────────────────────────────────────
+GROQ_API_KEY: str = get_config_val("GROQ_API_KEY", "")
+GROQ_MODEL: str = get_config_val("GROQ_MODEL", "openai/gpt-oss-120b")
+
 # ── Ollama Settings ──────────────────────────────────────────
-OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "phi3")
-OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-TEMPERATURE: float = float(os.getenv("TEMPERATURE", "0.1"))
-MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "1024"))
+OLLAMA_MODEL: str = get_config_val("OLLAMA_MODEL", "phi3")
+OLLAMA_BASE_URL: str = get_config_val("OLLAMA_BASE_URL", "http://localhost:11434")
+
+# ── Hyperparameters ──────────────────────────────────────────
+TEMPERATURE: float = float(get_config_val("TEMPERATURE", "0.1"))
+MAX_TOKENS: int = int(get_config_val("MAX_TOKENS", "1024"))
+
+
+def get_llm(provider: str | None = None, model: str | None = None, temperature: float | None = None):
+    """
+    Factory function to instantiate the configured LLM (Groq or Ollama).
+    """
+    selected_provider = (provider or get_config_val("LLM_PROVIDER") or LLM_PROVIDER or "groq").lower()
+    temp = TEMPERATURE if temperature is None else temperature
+
+    if selected_provider == "groq":
+        from langchain_groq import ChatGroq
+        api_key = get_config_val("GROQ_API_KEY") or GROQ_API_KEY
+        if not api_key:
+            raise ValueError(
+                "GROQ_API_KEY is not set! Please set it in your .env file, environment variables, or Streamlit Secrets."
+            )
+        chosen_model = model or GROQ_MODEL
+        return ChatGroq(
+            model=chosen_model,
+            api_key=api_key,
+            temperature=temp,
+        )
+    elif selected_provider == "ollama":
+        from langchain_ollama import ChatOllama
+        chosen_model = model or OLLAMA_MODEL
+        return ChatOllama(
+            model=chosen_model,
+            base_url=OLLAMA_BASE_URL,
+            temperature=temp,
+        )
+    else:
+        raise ValueError(f"Unsupported LLM provider: '{selected_provider}'. Use 'groq' or 'ollama'.")
+
 
 # ── Agent Settings ───────────────────────────────────────────
 AGENT_MAX_ITERATIONS: int = 10          # Max reasoning steps per query

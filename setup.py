@@ -39,8 +39,20 @@ def check_ollama():
     return True
 
 
+def check_groq():
+    key = os.getenv("GROQ_API_KEY", "")
+    if key and not key.startswith("gsk_your"):
+        masked = key[:6] + "..." + key[-4:] if len(key) > 10 else "configured"
+        print(f"  [OK] GROQ_API_KEY found ({masked})")
+        return True
+    else:
+        print("  [INFO] GROQ_API_KEY not set in .env yet.")
+        print("         Get your free key at: https://console.groq.com/keys")
+        return False
+
+
 def check_deps():
-    pkgs = ["langchain", "langchain_ollama", "langchain_core", "langgraph", "streamlit", "dotenv", "rich"]
+    pkgs = ["langchain", "langchain_groq", "langchain_ollama", "langchain_core", "langgraph", "streamlit", "dotenv", "rich"]
     missing = []
     for p in pkgs:
         try:
@@ -53,15 +65,19 @@ def check_deps():
 
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
+
     print("=" * 50)
-    print("  Basic Agent - Setup Check")
+    print("  AI Agent - Setup Check")
     print("=" * 50)
     print("\n[Python]"); check_python()
-    print("\n[Ollama]"); check_ollama()
+    print("\n[Groq API]"); check_groq()
+    print("\n[Ollama (Optional Local Fallback)]"); check_ollama()
     print("\n[Dependencies]")
     m = check_deps()
     print()
     if m:
         print(f"Missing packages! Run: pip install -r requirements.txt")
     else:
-        print("All good! Run: python agent.py")
+        print("All dependencies installed! Run: python agent.py")

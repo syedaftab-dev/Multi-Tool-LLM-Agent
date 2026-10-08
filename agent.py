@@ -28,10 +28,9 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
 
-from langchain_ollama import ChatOllama
 from langgraph.prebuilt import create_react_agent
 
-from config import OLLAMA_MODEL, OLLAMA_BASE_URL, TEMPERATURE
+from config import get_llm, LLM_PROVIDER, GROQ_MODEL, OLLAMA_MODEL
 from tools.calculator import calculator
 
 console = Console(force_terminal=True)
@@ -40,12 +39,8 @@ console = Console(force_terminal=True)
 def create_basic_agent():
     """Create and return a basic ReAct agent with a calculator tool."""
 
-    # ── Connect to the local Ollama model ────────────────────
-    llm = ChatOllama(
-        model=OLLAMA_MODEL,
-        base_url=OLLAMA_BASE_URL,
-        temperature=TEMPERATURE,
-    )
+    # ── Connect to configured LLM (Groq or Ollama) ───────────
+    llm = get_llm()
 
     # ── Register tools ───────────────────────────────────────
     tools = [calculator]
@@ -60,10 +55,11 @@ def create_basic_agent():
 def main():
     """Run the basic agent in an interactive CLI loop."""
 
+    current_model = GROQ_MODEL if LLM_PROVIDER == "groq" else OLLAMA_MODEL
     console.print(
         Panel(
             "[bold cyan]Basic AI Agent[/bold cyan]\n"
-            f"[dim]Model: {OLLAMA_MODEL} | Tool: Calculator[/dim]\n"
+            f"[dim]Provider: {LLM_PROVIDER.upper()} | Model: {current_model} | Tool: Calculator[/dim]\n"
             "[dim]Type 'quit' or 'exit' to stop.[/dim]",
             border_style="cyan",
             expand=False,
